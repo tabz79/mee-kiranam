@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -18,6 +19,7 @@ import { Sales, Expenses, Restock } from "@shared/schema";
 
 export default function Dashboard() {
   const [isQuickRestockOpen, setIsQuickRestockOpen] = useState(false);
+  const [, setLocation] = useLocation();
   const today = getTodayDate();
 
   const { data: todaySales } = useQuery<Sales>({
@@ -56,21 +58,21 @@ export default function Dashboard() {
     {
       title: "Record Sales",
       icon: <CreditCard className="w-6 h-6" />,
-      action: () => window.location.href = "/sales",
+      action: () => setLocation("/sales"),
       bgColor: "bg-secondary-container",
       textColor: "text-secondary",
     },
     {
       title: "Add Expenses",
       icon: <FileText className="w-6 h-6" />,
-      action: () => window.location.href = "/expenses",
+      action: () => setLocation("/expenses"),
       bgColor: "bg-tertiary-container",
       textColor: "text-tertiary",
     },
     {
       title: "View Reports",
       icon: <BarChart3 className="w-6 h-6" />,
-      action: () => window.location.href = "/reports",
+      action: () => setLocation("/reports"),
       bgColor: "bg-surface-variant",
       textColor: "text-on-surface-variant",
     },

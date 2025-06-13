@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { localStorageManager } from "@/lib/storage";
 import { formatCurrency, calculateItemProfit, getTodayDate } from "@/lib/calculations";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Price } from "@shared/schema";
 
 interface QuickRestockOverlayProps {
   isOpen: boolean;
@@ -24,16 +25,20 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
   const [session, setSession] = useState({ items: [], total: 0 });
   const { toast } = useToast();
 
+  const { data: prices = [] } = useQuery<Price[]>({
+    queryKey: ["/api/prices"],
+  });
+
   useEffect(() => {
     if (isOpen) {
       resetToFirstStep();
-      setSession(localStorageManager.getQuickRestockSession());
+      setSession({ items: [], total: 0 });
     }
   }, [isOpen]);
 
   const resetToFirstStep = () => {
     setStep("item");
-    setCurrentStep(localStorageManager.getQuickRestockSession().items.length + 1);
+    setCurrentStep(session.items.length + 1);
     setItemName("");
     setQuantity("");
   };
@@ -52,7 +57,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
   };
 
   const addItemToSession = async () => {
-    const priceInfo = localStorageManager.getPriceByItemName(itemName);
+    const priceInfo = prices.find(p => p.itemName === itemName);
     if (!priceInfo) {
       toast({
         title: "Price not found",
@@ -65,14 +70,18 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
     const qty = parseInt(quantity);
     const total = priceInfo.wholesalePrice * qty;
 
-    localStorageManager.addQuickRestockItem({
+    const newItem = {
       name: itemName,
       quantity: qty,
       price: priceInfo.wholesalePrice,
       total
-    });
+    };
 
-    setSession(localStorageManager.getQuickRestockSession());
+    setSession(prev => ({
+      items: [...prev.items, newItem],
+      total: prev.total + total
+    }));
+
     resetToFirstStep();
     
     toast({
@@ -82,8 +91,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
   };
 
   const handleSaveSession = async () => {
-    const sessionData = localStorageManager.getQuickRestockSession();
-    if (sessionData.items.length === 0) {
+    if (session.items.length === 0) {
       toast({
         title: "No items to save",
         description: "Add items to the session before saving.",
@@ -94,7 +102,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
 
     try {
       const today = getTodayDate();
-      const restocks = sessionData.items.map(item => ({
+      const restocks = session.items.map(item => ({
         date: today,
         itemName: item.name,
         quantity: item.quantity,
@@ -105,7 +113,6 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
       await apiRequest("POST", "/api/restocks/batch", restocks);
       await queryClient.invalidateQueries({ queryKey: ["/api/restocks"] });
 
-      localStorageManager.clearQuickRestockSession();
       setSession({ items: [], total: 0 });
       onClose();
 
@@ -127,7 +134,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
       if (confirm("Save this restock session before closing?")) {
         handleSaveSession();
       } else {
-        localStorageManager.clearQuickRestockSession();
+        setSession({ items: [], total: 0 });
         onClose();
       }
     } else {
@@ -136,7 +143,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
   };
 
   const getPriceDisplay = () => {
-    const priceInfo = localStorageManager.getPriceByItemName(itemName);
+    const priceInfo = prices.find(p => p.itemName === itemName);
     if (!priceInfo || !quantity) return null;
 
     const qty = parseInt(quantity);
@@ -193,15 +200,19 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
                 {step === "item" && (
                   <div className="space-y-2">
                     <Label htmlFor="item-name">Item Name</Label>
-                    <Input
-                      id="item-name"
+                    <select
                       value={itemName}
                       onChange={(e) => setItemName(e.target.value)}
-                      placeholder="Enter item name"
-                      className="text-xl p-6 rounded-3xl"
-                      onKeyPress={(e) => e.key === "Enter" && handleNext()}
+                      className="w-full text-xl p-6 rounded-3xl border border-input focus:border-primary focus:outline-none bg-background"
                       autoFocus
-                    />
+                    >
+                      <option value="">Select an item</option>
+                      {prices.map((price) => (
+                        <option key={price.itemName} value={price.itemName}>
+                          {price.itemName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
