@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Minus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Minus, Calendar, Package } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, getTodayDate } from "@/lib/calculations";
 import { useToast } from "@/hooks/use-toast";
-import { Price } from "@shared/schema";
+import { Price, type Restock as RestockEntry } from "@shared/schema";
 
 interface RestockItem {
   itemName: string;
@@ -26,6 +27,11 @@ export default function Restock() {
 
   const { data: prices = [] } = useQuery<Price[]>({
     queryKey: ["/api/prices"],
+  });
+
+  const { data: todayRestocks = [] } = useQuery<RestockEntry[]>({
+    queryKey: ["/api/restocks", restockDate],
+    queryFn: () => fetch(`/api/restocks/${restockDate}`).then(res => res.json()),
   });
 
   const createRestockMutation = useMutation({
@@ -112,14 +118,23 @@ export default function Restock() {
     createRestockMutation.mutate(restockData);
   };
 
+  const totalTodayRestock = todayRestocks.reduce((sum, item) => sum + item.total, 0);
+
   return (
     <div className="p-4 space-y-6 pb-20">
       <Card className="elevation-1">
         <CardHeader>
-          <CardTitle className="text-xl">Detailed Restock Entry</CardTitle>
+          <CardTitle className="text-xl">Restock Management</CardTitle>
         </CardHeader>
 
         <CardContent>
+          <Tabs defaultValue="add" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="add">Add New</TabsTrigger>
+              <TabsTrigger value="view">View Entries</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="add" className="space-y-4 mt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="restock-date">Restock Date</Label>
@@ -215,6 +230,71 @@ export default function Restock() {
               {createRestockMutation.isPending ? "Saving..." : "Save Restock Entry"}
             </Button>
           </form>
+            </TabsContent>
+
+            <TabsContent value="view" className="space-y-4 mt-6">
+              <div className="space-y-2">
+                <Label htmlFor="view-date">Select Date</Label>
+                <Input
+                  id="view-date"
+                  type="date"
+                  value={restockDate}
+                  onChange={(e) => setRestockDate(e.target.value)}
+                />
+              </div>
+
+              {todayRestocks.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="bg-primary-container p-4 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-5 h-5" />
+                        <span className="font-medium">
+                          {new Date(restockDate).toLocaleDateString('en-IN', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Total Cost</p>
+                        <p className="text-xl font-bold text-primary">{formatCurrency(totalTodayRestock)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {todayRestocks.map((restock) => (
+                      <div key={restock.id} className="bg-surface-variant p-4 rounded-2xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Package className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-medium">{restock.itemName}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Qty: {restock.quantity} × {formatCurrency(restock.price)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-warning">{formatCurrency(restock.total)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No restock entries for {new Date(restockDate).toLocaleDateString('en-IN')}</p>
+                  <p className="text-sm">Switch to "Add New" tab to create entries</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

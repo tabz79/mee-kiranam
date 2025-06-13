@@ -17,12 +17,24 @@ interface QuickRestockOverlayProps {
 
 type RestockStep = "item" | "quantity" | "confirm";
 
+interface SessionItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface Session {
+  items: SessionItem[];
+  total: number;
+}
+
 export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProps) {
   const [step, setStep] = useState<RestockStep>("item");
   const [currentStep, setCurrentStep] = useState(1);
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [session, setSession] = useState({ items: [], total: 0 });
+  const [session, setSession] = useState<Session>({ items: [], total: 0 });
   const { toast } = useToast();
 
   const { data: prices = [] } = useQuery<Price[]>({
@@ -70,7 +82,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
     const qty = parseInt(quantity);
     const total = priceInfo.wholesalePrice * qty;
 
-    const newItem = {
+    const newItem: SessionItem = {
       name: itemName,
       quantity: qty,
       price: priceInfo.wholesalePrice,
@@ -102,7 +114,7 @@ export function QuickRestockOverlay({ isOpen, onClose }: QuickRestockOverlayProp
 
     try {
       const today = getTodayDate();
-      const restocks = session.items.map(item => ({
+      const restocks = session.items.map((item: SessionItem) => ({
         date: today,
         itemName: item.name,
         quantity: item.quantity,
