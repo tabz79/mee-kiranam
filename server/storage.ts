@@ -145,11 +145,21 @@ export class MemStorage implements IStorage {
     const existingSales = this.sales.get(insertSales.date);
     
     if (existingSales) {
-      const updatedSales: Sales = { ...existingSales, ...insertSales };
+      const updatedSales: Sales = { 
+        ...existingSales, 
+        cashSales: insertSales.cashSales ?? existingSales.cashSales,
+        onlineSales: insertSales.onlineSales ?? existingSales.onlineSales,
+        date: insertSales.date
+      };
       this.sales.set(insertSales.date, updatedSales);
       return updatedSales;
     } else {
-      const sales: Sales = { ...insertSales, id: this.currentSalesId++ };
+      const sales: Sales = { 
+        id: this.currentSalesId++,
+        date: insertSales.date,
+        cashSales: insertSales.cashSales ?? 0,
+        onlineSales: insertSales.onlineSales ?? 0
+      };
       this.sales.set(insertSales.date, sales);
       return sales;
     }
@@ -164,11 +174,23 @@ export class MemStorage implements IStorage {
     const existingExpenses = this.expenses.get(insertExpenses.date);
     
     if (existingExpenses) {
-      const updatedExpenses: Expenses = { ...existingExpenses, ...insertExpenses };
+      const updatedExpenses: Expenses = { 
+        ...existingExpenses, 
+        rent: insertExpenses.rent ?? existingExpenses.rent,
+        electricity: insertExpenses.electricity ?? existingExpenses.electricity,
+        miscellaneous: insertExpenses.miscellaneous ?? existingExpenses.miscellaneous,
+        date: insertExpenses.date
+      };
       this.expenses.set(insertExpenses.date, updatedExpenses);
       return updatedExpenses;
     } else {
-      const expenses: Expenses = { ...insertExpenses, id: this.currentExpensesId++ };
+      const expenses: Expenses = { 
+        id: this.currentExpensesId++,
+        date: insertExpenses.date,
+        rent: insertExpenses.rent ?? 0,
+        electricity: insertExpenses.electricity ?? 0,
+        miscellaneous: insertExpenses.miscellaneous ?? 0
+      };
       this.expenses.set(insertExpenses.date, expenses);
       return expenses;
     }
@@ -177,8 +199,9 @@ export class MemStorage implements IStorage {
   // Reports
   async getSalesInDateRange(startDate: string, endDate: string): Promise<Sales[]> {
     const result: Sales[] = [];
+    const salesArray = Array.from(this.sales.entries());
     
-    for (const [date, sales] of this.sales.entries()) {
+    for (const [date, sales] of salesArray) {
       if (date >= startDate && date <= endDate) {
         result.push(sales);
       }
@@ -189,8 +212,9 @@ export class MemStorage implements IStorage {
 
   async getExpensesInDateRange(startDate: string, endDate: string): Promise<Expenses[]> {
     const result: Expenses[] = [];
+    const expensesArray = Array.from(this.expenses.entries());
     
-    for (const [date, expenses] of this.expenses.entries()) {
+    for (const [date, expenses] of expensesArray) {
       if (date >= startDate && date <= endDate) {
         result.push(expenses);
       }
@@ -201,8 +225,9 @@ export class MemStorage implements IStorage {
 
   async getRestocksInDateRange(startDate: string, endDate: string): Promise<Restock[]> {
     const result: Restock[] = [];
+    const restocksArray = Array.from(this.restocks.entries());
     
-    for (const [date, restocks] of this.restocks.entries()) {
+    for (const [date, restocks] of restocksArray) {
       if (date >= startDate && date <= endDate) {
         result.push(...restocks);
       }

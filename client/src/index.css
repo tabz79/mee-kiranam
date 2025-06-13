@@ -115,7 +115,7 @@
   }
   
   .quick-restock-overlay {
-    @apply fixed inset-0 bg-surface z-50 transform translate-y-full transition-transform duration-300 ease-in-out;
+    @apply fixed inset-0 bg-background z-50 transform translate-y-full transition-transform duration-300 ease-in-out;
   }
   
   .quick-restock-overlay.active {
