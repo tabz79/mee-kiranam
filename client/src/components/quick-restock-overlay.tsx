@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, calculateItemProfit, getTodayDate } from "@/lib/calculations";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Price } from "@shared/schema";
+import { Price } from "@/shared/schema";
 
 interface QuickRestockOverlayProps {
   isOpen: boolean;

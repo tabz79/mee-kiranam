@@ -1,13 +1,13 @@
+import { getExpenses, addExpense } from "../data/expenses";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, getTodayDate } from "@/lib/calculations";
 import { useToast } from "@/hooks/use-toast";
-import { Expenses } from "@shared/schema";
+import { Expenses } from "@/shared/schema";
 
 export default function ExpensesPage() {
   const [expensesDate, setExpensesDate] = useState(getTodayDate());
@@ -16,30 +16,33 @@ export default function ExpensesPage() {
   const [miscellaneous, setMiscellaneous] = useState("");
   const { toast } = useToast();
 
-  const { data: existingExpenses } = useQuery<Expenses>({
-    queryKey: ["/api/expenses", expensesDate],
-    queryFn: async () => {
-      const response = await fetch(`/api/expenses/${expensesDate}`);
-      if (response.status === 404) return null;
-      return response.json();
-    },
-  });
+const { data: existingExpenses } = useQuery<Expenses | null>({
+  queryKey: ["expenses", expensesDate],
+  queryFn: async () => {
+    const allExpenses = getExpenses();
+    const match = allExpenses.find((e) => e.date === expensesDate);
+    return match || null;
+  },
+});
 
-  const createExpensesMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/expenses", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
-      resetForm();
-      toast({ title: "Success", description: "Expenses entry saved successfully" });
-    },
-    onError: () => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to save expenses entry", 
-        variant: "destructive" 
-      });
-    }
-  });
+const createExpensesMutation = useMutation({
+  mutationFn: (data: any) => {
+    addExpense(data);
+    return Promise.resolve();
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    resetForm();
+    toast({ title: "Success", description: "Expenses entry saved successfully" });
+  },
+  onError: () => {
+    toast({ 
+      title: "Error", 
+      description: "Failed to save expenses entry", 
+      variant: "destructive" 
+    });
+  }
+});
 
   useEffect(() => {
     if (existingExpenses) {

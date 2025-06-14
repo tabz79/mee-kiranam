@@ -1,4 +1,4 @@
-import { Sales, Expenses, Restock, Price } from "@shared/schema";
+import { Sales, Expenses, Restock, Price } from "@/shared/schema";
 
 export interface DailyTotals {
   totalSales: number;

@@ -1,77 +1,42 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { getSales, addSale } from "../data/sales";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { formatCurrency, getTodayDate } from "@/lib/calculations";
-import { useToast } from "@/hooks/use-toast";
-import { Sales } from "@shared/schema";
 
-export default function SalesPage() {
-  const [salesDate, setSalesDate] = useState(getTodayDate());
+export default function Sales() {
+  const [salesDate, setSalesDate] = useState("2025-06-14");
   const [cashSales, setCashSales] = useState("");
   const [onlineSales, setOnlineSales] = useState("");
-  const { toast } = useToast();
+useEffect(() => {
+  const allSales = getSales();
+  const match = allSales.find((sale: any) => sale.date === salesDate);
 
-  const { data: existingSales } = useQuery<Sales>({
-    queryKey: ["/api/sales", salesDate],
-    queryFn: async () => {
-      const response = await fetch(`/api/sales/${salesDate}`);
-      if (response.status === 404) return null;
-      return response.json();
-    },
-  });
-
-  const createSalesMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/sales", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
-      resetForm();
-      toast({ title: "Success", description: "Sales entry saved successfully" });
-    },
-    onError: () => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to save sales entry", 
-        variant: "destructive" 
-      });
-    }
-  });
-
-  useEffect(() => {
-    if (existingSales) {
-      setCashSales(existingSales.cashSales.toString());
-      setOnlineSales(existingSales.onlineSales.toString());
-    } else {
-      setCashSales("");
-      setOnlineSales("");
-    }
-  }, [existingSales]);
-
-  const resetForm = () => {
+  if (match) {
+    setCashSales(match.cashSales.toString());
+    setOnlineSales(match.onlineSales.toString());
+  } else {
     setCashSales("");
     setOnlineSales("");
-  };
+  }
+}, [salesDate]);
 
   const totalSales = (parseFloat(cashSales) || 0) + (parseFloat(onlineSales) || 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const data = {
-      date: salesDate,
-      cashSales: parseFloat(cashSales) || 0,
-      onlineSales: parseFloat(onlineSales) || 0
-    };
-
-    createSalesMutation.mutate(data);
+    addSale({
+  date: salesDate,
+  cashSales: parseFloat(cashSales) || 0,
+  onlineSales: parseFloat(onlineSales) || 0,
+});
+alert("✅ Sales saved locally");
   };
 
   return (
     <div className="p-4 space-y-6 pb-20">
-      <Card className="elevation-1">
+      <Card>
         <CardHeader>
           <CardTitle className="text-xl">Daily Sales Entry</CardTitle>
         </CardHeader>
@@ -89,48 +54,32 @@ export default function SalesPage() {
               />
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="cash-sales">Cash Sales (₹)</Label>
-                <Input
-                  id="cash-sales"
-                  type="number"
-                  step="0.01"
-                  value={cashSales}
-                  onChange={(e) => setCashSales(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="online-sales">Online Sales (₹)</Label>
-                <Input
-                  id="online-sales"
-                  type="number"
-                  step="0.01"
-                  value={onlineSales}
-                  onChange={(e) => setOnlineSales(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="cash-sales">Cash Sales (₹)</Label>
+              <Input
+                id="cash-sales"
+                type="number"
+                value={cashSales}
+                onChange={(e) => setCashSales(e.target.value)}
+              />
             </div>
 
-            <div className="bg-success/10 p-4 rounded-2xl">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Total Sales:</span>
-                <span className="text-2xl font-bold text-success">
-                  {formatCurrency(totalSales)}
-                </span>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="online-sales">Online Sales (₹)</Label>
+              <Input
+                id="online-sales"
+                type="number"
+                value={onlineSales}
+                onChange={(e) => setOnlineSales(e.target.value)}
+              />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-success hover:bg-success/90" 
-              size="lg"
-              disabled={createSalesMutation.isPending}
-            >
-              {createSalesMutation.isPending ? "Saving..." : "Save Sales Entry"}
+            <div className="text-right font-bold">
+              Total: ₹{totalSales.toFixed(2)}
+            </div>
+
+            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white">
+              Save Sales Entry
             </Button>
           </form>
         </CardContent>

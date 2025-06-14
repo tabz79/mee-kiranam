@@ -1,47 +1,24 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Header } from "@/components/header";
-import { BottomNavigation } from "@/components/bottom-navigation";
-import Dashboard from "@/pages/dashboard";
-import PriceList from "@/pages/price-list";
-import Restock from "@/pages/restock";
 import Sales from "@/pages/sales";
-import Expenses from "@/pages/expenses";
-import Reports from "@/pages/reports";
-import NotFound from "@/pages/not-found";
+import RestockPage from "@/pages/restock"; // ✅ rename this line
+import PriceListPage from "@/pages/price-list";
 
-function Router() {
+function DummyPage({ label }: { label: string }) {
+  return (
+    <div className="p-6 text-blue-700 text-xl">
+      {label} Page Loaded ✅
+    </div>
+  );
+}
+
+export default function App() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/prices" component={PriceList} />
-      <Route path="/restock" component={Restock} />
+      <Route path="/" component={() => <DummyPage label="Dashboard" />} />
       <Route path="/sales" component={Sales} />
-      <Route path="/expenses" component={Expenses} />
-      <Route path="/reports" component={Reports} />
-      <Route component={NotFound} />
+      <Route path="/restock" component={RestockPage} /> {/* ✅ updated to RestockPage */}
+      <Route path="/price-list" component={PriceListPage} />
+      <Route component={() => <DummyPage label="404 Not Found" />} />
     </Switch>
   );
 }
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen bg-surface text-foreground">
-          <Header />
-          <main className="pb-20">
-            <Router />
-          </main>
-          <BottomNavigation />
-          <Toaster />
-        </div>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-}
-
-export default App;

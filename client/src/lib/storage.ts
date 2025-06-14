@@ -1,4 +1,4 @@
-import { Price, Sales, Expenses, Restock } from "@shared/schema";
+import { Price, Sales, Expenses, Restock } from "@/shared/schema";
 
 interface LocalStorageData {
   prices: Record<string, Price>;

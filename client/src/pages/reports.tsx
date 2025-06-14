@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, BarChart3 } from "lucide-react";
 import { formatCurrency, getDateRange, calculateMonthlyReport, getTopPerformingItems } from "@/lib/calculations";
-import { Sales, Expenses, Restock, Price } from "@shared/schema";
+import { Sales, Expenses, Restock, Price } from "@/shared/schema";
 
 type ReportPeriod = "30days" | "thisMonth" | "lastMonth";
 
